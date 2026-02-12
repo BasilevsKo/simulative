@@ -9,17 +9,7 @@ with ds as(
 	where LENGTH(b.card)= 13 --отсекаем неопределенные дисконтные карты
 	group by b.card  
 order by frequency desc
-),
-levels as(
-    select 
-    	PERCENTILE_CONT(0.2)within group (order by recency) as recency_1,
-    	PERCENTILE_CONT(0.35)within group (order by recency) as recency_2,
-    	PERCENTILE_CONT(0.2)within group (order by frequency) as frequency_1,
-    	PERCENTILE_CONT(0.35)within group (order by frequency) as ferquency_2,
-    	PERCENTILE_CONT(0.2)within group (order by monetary) as monetary_1,
-    	PERCENTILE_CONT(0.35)within group (order by monetary) as monetary_2
-    from ds 
-), 
+)
 select *, 
     		case --присваиваем статус по дате последнего посещения
     			when recency<=(
@@ -43,4 +33,5 @@ select *,
     			else 3
     		end as m
   from ds
+
   order by ds.monetary  
