@@ -1,0 +1,33 @@
+with
+write_off as ( 
+	select round(avg(sum)*-1, 2) write_off
+	from
+	(	SELECT sum(t.value)
+		FROM "transaction" t 
+		where (t.type_id between 23 and 28 or t.type_id =1) and t.value <500
+		group by t.user_id 
+	) as avgg
+), 
+accruals as (
+	select round(avg(sum), 2) accruals 
+	from
+		(	SELECT sum(t.value)
+			FROM "transaction" t 
+			where (t.type_id between 2 and 22 or t.type_id =29) and t.value <500
+			group by t.user_id 
+		) as avgg2
+),
+balance as (
+	select round(avg ("sum"),2) balance
+	from 
+		(select t.user_id,
+			sum(case
+				when t.type_id in (1, 23,24,25,26,27,28)
+				then -t.value else t.value
+			end)
+			from "transaction" t 
+			WHERE value <500
+		group by t.user_id ) as a
+)
+select *
+from write_off, accruals, balance 

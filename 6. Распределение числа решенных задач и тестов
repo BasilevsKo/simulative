@@ -1,0 +1,29 @@
+with allpbs as
+(      -- объединение результатов двух таблиц решений в один дата-сет
+	select user_id, problem_id
+	from coderun cr
+	union all
+	select user_id, problem_id 
+	from codesubmit cs
+	order by user_id 
+),
+problem_tab as 
+(         -- подсчёт количества уникальных решений по студентам
+	select user_id, count(distinct problem_id) problem_count
+	from allpbs
+	group by user_id
+),
+test_tab as
+(        -- подсчёт количесвто уникальных тестов по студентам
+	select user_id, count(distinct test_id) test_count
+	from teststart ts
+	group by user_id  
+)         -- средние и медианные значения по решениям и тестам
+select round(avg(problem_count), 2)  problems_avg,
+	   round(avg(test_count), 2)  tests_avg,	
+	   percentile_cont(0.5) within group (order by problem_count)::int problems_median,
+	   percentile_cont(0.5) within group (order by test_count)::int tests_median
+from test_tab full join problem_tab using (user_id)
+
+
+ 

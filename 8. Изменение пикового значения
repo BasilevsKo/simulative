@@ -1,0 +1,17 @@
+with ds as( --считаем уникальных пользователей по дате за период
+	select  date_trunc('day', u.date_joined) dt, count(distinct u.id ) cnt
+	from users u 
+	group by date_trunc ('day',u.date_joined)
+),
+cal as (  --создаём календарь на заданный период
+	SELECT
+    '2022-01-01'::timestamp  + (n * INTERVAL '1 day') AS dt
+	FROM generate_series(0, 110) AS n
+)        --считаем максимальное текущее значение и смотрим разницу между текущим значением и максимумом
+select cal.dt, coalesce(ds.cnt, 0)cnt ,
+	max(cnt)over(ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) max_cnt,
+	coalesce(ds.cnt, 0)-max(cnt)over(ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) diff 
+from cal
+left join ds on ds.dt=cal.dt 
+
+ 
