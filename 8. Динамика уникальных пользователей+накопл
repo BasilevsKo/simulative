@@ -1,0 +1,25 @@
+with ds as( --data set формируем общий дата сет по двум таблицам активностей
+	select created_at::date as dt, user_id 
+		from coderun cr
+		where created_at::date>='2022-01-01'
+		union 
+		select created_at::date, cs.user_id 
+		from codesubmit cs
+		where created_at::date>='2022-01-01'
+),
+fa as(  --first activity определяем первую дату активности, ставим на первую флаг 1, остальные 0
+	select *, 
+		case when row_number()over(partition by user_id order by dt )=1 then 1 else 0 end as fe --first entrance
+	from ds 
+	order by user_id 
+),
+lds as( --last data set формируем финальный датасет с суммой активностей по дате
+	select dt, sum(fe) s
+	from fa
+	group by dt 
+	order by dt 
+)
+select dt as ymd, -- нарастающей суммой определяем общее количество активностей
+		sum(s)over(order by dt)::int unique_cnt		
+from lds 
+
