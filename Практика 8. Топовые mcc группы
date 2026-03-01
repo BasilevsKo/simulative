@@ -1,0 +1,33 @@
+--8.Топовые mcc группы
+
+with ds as(   --готовим дата-сет: выборка продаж за период, присоединяем таблицу кодов и таблицу групп, считаем сумму продаж за месяц
+	select mg.group_name,
+			extract(month from p.transaction_date) as month,
+			round(sum(p.transaction_value),2) as tr_sum
+	from purchases p 
+	join mcc_codes mc on mc.mcc_code_id =p.mcc_code_id and p.transaction_date between mc.valid_from and mc.valid_to
+	join mcc_groups mg on mg.group_id = mc.group_id 
+	where p.transaction_date between '2019-01-01'and '2019-12-31'
+	and p.transaction_date between valid_from and valid_to
+	group by month, mg.group_name 
+),
+cal as( --готовим помесячный календарь
+	select generate_series(1,12)::int as month
+),
+lds as( --готовим окончательный дата-сет, ранжируем продажи в месяце, вычисляем абсолютное отклонение и относительное отклонение
+	select group_name,
+			month,
+			tr_sum,
+			row_number()over(partition by month order by tr_sum desc) as rn,
+			tr_sum-lead(tr_sum)over(partition by month)  as abs_diff ,
+			(tr_sum-lead(tr_sum)over(partition by month))/tr_sum  as rel_diff
+	from ds
+) -- соединяем дата-сет с календарём, оставляем только максимальные продажи в месяце (или нулевые значения если продаж нет)
+select group_name, cal.month,tr_sum, abs_diff, rel_diff
+from cal 
+left join lds using(month)
+where rn=1 or rn is null
+order by month
+
+
+
